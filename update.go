@@ -21,26 +21,25 @@ type Update interface {
 }
 
 type updateCommand struct {
+	*Command
+
 	ctx  context.Context
 	opts *options.UpdateOptions
 
-	comm *Command
-
-	filter bson.M
 	update bson.M
 }
 
 func NewUpdateCommand() *updateCommand {
-	return &updateCommand{filter: make(bson.M)}
+	return &updateCommand{Command: NewCommand()}
 }
 
 func (u *updateCommand) Filter(filter interface{}) Update {
-	u.comm.Filter(filter)
+	u.Command.Filter(filter)
 	return u
 }
 
 func (u *updateCommand) Set(set bson.M) Update {
-	u.filter["$set"] = set
+	u.update["$set"] = set
 	return u
 }
 
@@ -57,7 +56,7 @@ func (u *updateCommand) Push(field string, value interface{}) Update {
 }
 
 func (u *updateCommand) Inc(field string, amount int64) Update {
-	u.addUpdate(field, amount, "$ic")
+	u.addUpdate(field, amount, "$inc")
 
 	return u
 }
@@ -67,14 +66,14 @@ func (u *updateCommand) addUpdate(key, value interface{}, field string) {
 	var target bson.M = v.(bson.M)
 	if !ok {
 		target = make(bson.M)
-		u.filter[field] = target
+		u.update[field] = target
 	}
 
 	target[field] = value
 }
 
 func (u *updateCommand) GetCollection() *Collection {
-	return u.comm.coll
+	return u.Command.coll
 }
 
 func (u *updateCommand) One() (*mongo.UpdateResult, error) {

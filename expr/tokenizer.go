@@ -38,6 +38,7 @@ const (
 	PARATHENSIS         = "PARENTHESIS"
 	LITERAL             = "LITERAL"
 	VARIABLE            = "VARIABLE"
+	OTHER               = "OTHER"
 )
 
 type TokenMatcher struct {
@@ -48,9 +49,8 @@ type TokenMatcher struct {
 }
 
 type Token struct {
-	Kind  string
-	Name  string
-	Value string
+	Matcher *TokenMatcher
+	Value   string
 }
 
 type Tokenizer struct {
@@ -73,7 +73,7 @@ func NewTokenizer() *Tokenizer {
 	t.addToken(LEFT_PARENTHESIS, PARATHENSIS, `\(`)
 	t.addToken(RIGHT_PARENTHESIS, PARATHENSIS, `\)`)
 	t.addToken(FIELD, VARIABLE, `\b\w+(\.\w+|\[(\*|\d+)\])*\b`)
-	t.addToken(INVALID, "", `[^\s]+`)
+	t.addToken(INVALID, OTHER, `[^\s]+`)
 
 	t.compileTokens()
 
@@ -89,7 +89,7 @@ func (t *Tokenizer) Tokenize(value string) []*Token {
 	for index < runeCount {
 		match, token := t.getTokenAt(asRunes[index:], index)
 		if match != "" {
-			result = append(result, &Token{Kind: token.Kind, Name: token.Name, Value: match})
+			result = append(result, &Token{Matcher: token, Value: match})
 		}
 		offset := math.Max(float64(len(match)), 1)
 		index += int(offset)
@@ -110,7 +110,7 @@ func (t *Tokenizer) compileTokens() {
 
 func (t *Tokenizer) getTokenAt(value []rune, index int) (string, *TokenMatcher) {
 	if match, token := t.isKnownToken(value); match != "" {
-		if token.Name == "INVALID" {
+		if token.Name == INVALID {
 			log.Fatalf("invalid token \"%s\" at %d", match, index)
 		}
 
